@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime';
 import Parser from "./parser";
 import saveAs from "file-saver";
 import ExcelJS from "../node_modules/exceljs/dist/es5/exceljs.browser";
@@ -26,7 +27,7 @@ const TableToExcel = (function(Parser) {
 
   methods.tableToSheet = function(wb, table, opts) {
     let ws = this.initSheet(wb, opts.sheet.name);
-    ws = Parser.parseDomToTable(ws, table, opts);
+    ws = Parser.parseDomToTable(wb, ws, table, opts);
     return wb;
   };
 

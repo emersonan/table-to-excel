@@ -1,12 +1,14 @@
 const TTEParser = (function() {
   let methods = {};
 
+
+
   /**
    * Parse HTML table to excel worksheet
    * @param {object} ws The worksheet object
    * @param {HTML entity} table The table to be converted to excel sheet
    */
-  methods.parseDomToTable = function(ws, table, opts) {
+  methods.parseDomToTable = async function(wb, ws, table, opts) {
     let _r, _c, cs, rs, r, c;
     let rows = [...table.rows];
     let widths = table.getAttribute("data-cols-width");
@@ -54,6 +56,39 @@ const TTEParser = (function() {
             e: { c: c + cs - 1, r: r + rs - 1 }
           });
         }
+
+        let imgs = td.getElementsByTagName("img");
+        if(imgs.length > 0) {
+          for(var i=0; i<imgs.length; ++i) {
+            if(typeof imgs[i].src == "string" && imgs[i].src.trim() != "") {
+              let fp_arr = imgs[i].src.trim().split('/');
+              if(fp_arr.length > 0) {
+                if(getPathFromUrl(imgs[i].src.trim()).toLowerCase().endsWith('jpg')) {
+                  let img_data = getDataUrl(imgs[i], 'image/jpeg');
+                  let tmp_img = wb.addImage({
+                    base64: img_data,
+                    extension: 'jpeg',
+                  });
+                  ws.addImage(tmp_img, {
+                    tl: { col: c - 1, row: r },
+                    ext: { width: imgs[i].width, height: imgs[i].height }
+                  });
+                } else if(getPathFromUrl(imgs[i].src.trim()).toLowerCase().endsWith('png')) {
+                  let img_data = getDataUrl(imgs[i], 'image/png');
+                  let tmp_img = wb.addImage({
+                    base64: img_data,
+                    extension: 'png',
+                  });
+                  ws.addImage(tmp_img, {
+                    tl: { col: c - 1, row: r },
+                    ext: { width: imgs[i].width, height: imgs[i].height }
+                  });
+                }
+              }
+            }
+          }
+        }
+
         c += cs;
         exCell.value = getValue(td);
         if (!opts.autoStyle) {
@@ -74,6 +109,22 @@ const TTEParser = (function() {
     applyMerges(ws, merges);
     return ws;
   };
+
+  let getDataUrl = function(img, type="image/jpeg") {
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    // Set width and height
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    // Draw the image
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL(type);
+  }
+
+  let getPathFromUrl = function (url) {
+    return url.split("?")[0];
+  }
 
   /**
    * To apply merges on the sheet
